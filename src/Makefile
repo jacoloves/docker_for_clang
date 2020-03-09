@@ -1,5 +1,5 @@
 C = gcc
 
-CFLAGS = -Wall -O2
+CFLAGS = -ggdb3 -O0 -Wall -O2
 
 $@: $(C) $(CFLAGS) $@.c
