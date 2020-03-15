@@ -17,6 +17,25 @@ typedef struct _alternatePerson {
   short age;
 } AlternatePerson;
 
+void initializePerson(Person *person, const char* fn, const char* ln, const char* title, int age) {
+  person->firstName = (char*)malloc(strlen(fn)+1);
+  strcpy(person->firstName, fn);
+  person->lastName = (char*)malloc(strlen(fn)+1);
+  strcpy(person->lastName, ln);
+  person->title = (char*)malloc(strlen(title)+1);
+  strcpy(person->title, title);
+  person->age = age;
+}
+
+void processPerson() {
+  Person person;
+  initializePerson(&person, "Peeter", "Underwood", "Manager", 36);
+
+  for (int i = 0; i<strlen(person.firstName); i++) {
+    printf("%c\n", person.firstName[i]);
+  }
+}
+
 int main()
 {
   Person person;
@@ -29,6 +48,10 @@ int main()
   ptrPerson->firstName = (char*)malloc(strlen("Emilly")+1);
   strcpy(ptrPerson->firstName, "Emilly");
   ptrPerson->age = 23;
+
+  AlternatePerson otherPerson;
+
+  printf("%d\n", sizeof(Person));
 
   printf("%d\n", ptrPerson->age);
   return 0;
