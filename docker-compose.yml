@@ -6,4 +6,5 @@ services:
       - type: bind
         source: .
         target: /cpp-dev
-         
+    cap_add:
+      - SYS_PTRACE

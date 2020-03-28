@@ -9,6 +9,6 @@ RUN apt-get update && \
     gdb \
     vim
 
-ENV LANG="ja_JP.UTF-8" LANGUAGE="ja_JP:ja" LC_ALL="ja_JP.UTF-8"
+ENV LANG="C.UTF-8" LANGUAGE="en_US"
 WORKDIR /cpp-dev
 
