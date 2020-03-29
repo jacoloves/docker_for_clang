@@ -7,7 +7,7 @@ RUN apt-get update && \
     cmake \
     libssl-dev \
     gdb \
-    vim
+    vim-gtk
 
 ENV LANG="C.UTF-8" LANGUAGE="en_US"
 WORKDIR /cpp-dev
