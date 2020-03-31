@@ -24,7 +24,6 @@ set softtabstop=2
 " カッコを補完する
 inoremap { {}<LEFT>
 inoremap ( ()<LEFT>
-inoremap < <><LEFT>
 " "や'を補完する
 inoremap " ""<LEFT>
 inoremap ' ''<LEFT>
