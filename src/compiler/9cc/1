@@ -1,0 +1,36 @@
+#include "chibi.h"
+
+// Scope for LOcal variables, global variables, typedef
+// or enum constants
+typedef struct VarScope VarScope;
+struct VarScope {
+  VarScope *next;
+  char *name;
+  int depth;
+
+  Var *var;
+  Type *type_def;
+  Type *enum_ty;
+  int enum_val;
+};
+
+// Scope for struct or enum tags
+typedef struct TogScope TagScope;
+struct TagScope {
+  TagScope *next;
+  char *name;
+  int depth;
+  Type *ty;
+};
+
+typedef struct {
+  VarSope *var_scope;
+  TagScope *tag_scope;
+} Scope;
+
+// All local variable onstances created during parsing are
+// accunmulated to this list.
+static VarList *locals;
+
+// Lokewise, global variables are accumulated to this list.
+static VarList *globals;
