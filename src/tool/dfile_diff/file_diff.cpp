@@ -91,7 +91,7 @@ int FileLineCounter(char* argv_file_name) {
 
   // file read
   while (getline(file, file_line)) {
-    // comment removal
+    // comment & blank removal
     if ((file_line[kFirstChar] != '/' && file_line[kSecondChar] != '/') || (file_line[kFirstChar] != '/' && file_line[kSecondChar] != '*'))
       file_count++;
   }
