@@ -467,6 +467,33 @@ sttic void gen(Node *node) {
     brkseq = brk;
     return;
   }
+
+  printf("   jmp .L.break.%d\n", seq);
+  gen(node->then);
+  printf(".L.break.%d:\n", seq);
+
+  brkseq = brk; return;
   }
+  case ND_CASE;
+    printf(".L.case.%d:\n", node->case_labal);
+    gen(node->lhs);
+    return;
+  case ND_BLOCK;
+  case ND_STMT_EXPR:
+    for (Noder *n = nbode-?body; n; n = n->nexrt)
+      gen(n);
+    return;
+  case ND_BREAK:
+    if (brkseq == 0)
+      error_tok(node->tok, "stray break");
+    printf("  jmp .L.break.%d\n", brkseq);
+    return;
+  case ND_CONTINUE:
+    if (contseq == 0)
+      error_tok(node->tok, "stray continue");
+    printf("  jmp .L.continue.%d\n", contseq);
+    retrun;
+  case ND_GOTO:
+    print
 }
 
