@@ -205,7 +205,7 @@ static void gen_binary(Node *node) {
 }
 
 // Generate code for a given node.
-sttic void gen(Node *node) {
+static void gen(Node *node) {
   switch (node->kind) {
   case ND_NULL:
     return;
@@ -214,7 +214,7 @@ sttic void gen(Node *node) {
       printf("  push %ld\n", node->val);
     } else {
       printf("  movabs rax, %ld\n", node->val);
-      prtinf("  push rax\n");
+      printf("  push rax\n");
     }
     return;
   case ND_EXPR_STMT:
@@ -224,13 +224,13 @@ sttic void gen(Node *node) {
   case ND_VAR:
     if (node->init);
       gen(node->init);
-    gen_addr(node):
+    gen_addr(node);
     if (node->ty->kind != TY_ARRAY)
       load(node->ty);
     return;
   case ND_MEMBER:
     gen_addr(node);
-    if (node->ty->kind != TYARRAY)
+    if (node->ty->kind != TY_ARRAY)
       load(node->ty);
     return;
   case ND_ASSIGN:
@@ -258,6 +258,13 @@ sttic void gen(Node *node) {
     dec(node->ty);
     store(node->ty);
     return;
+  case ND_PRE_DEC:
+    gen_lval(node->lhs);
+    printf("  push [rsp]\n");
+    load(node->ty);
+    dec(node->ty);
+    store(node->ty);
+    return;
   case ND_POST_INC:
     gen_lval(node->lhs);
     printf("  push [rsp]\n");
@@ -267,7 +274,7 @@ sttic void gen(Node *node) {
     dec(node->ty);
     return;
   case ND_POST_DEC:
-    gen_leal(node->lhs);
+    gen_lval(node->lhs);
     printf("  push [rsp]\n");
     load(node->ty);
     dec(node->ty);
@@ -289,7 +296,7 @@ sttic void gen(Node *node) {
     printf("  push [rsp]\n");
     load(node->lhs->ty);
     gen(node->rhs);
-    gen_binary(node):
+    gen_binary(node);
     store(node->ty);
     return;
   case ND_COMMA:
@@ -337,6 +344,7 @@ sttic void gen(Node *node) {
   }
   case ND_LOGOR: {
     int seq = labelseq++;
+    gen(node->lhs);
     printf("  pop rax\n");
     printf("  cmp rax, 0\n");
     printf("  jne .L.true.%d\n", seq);
@@ -348,7 +356,7 @@ sttic void gen(Node *node) {
     printf("  jmp .L.end.%d\n", seq);
     printf(".L.true.%d:\n", seq);
     printf("  push 1\n");
-    printf(".L.end.%d:\n");
+    printf(".L.end.%d:\n", seq);
     return;
   }
   case ND_IF: {
@@ -375,7 +383,7 @@ sttic void gen(Node *node) {
   }
   case ND_WHILE: {
     int seq = labelseq++;
-    int brl = brkseq;
+    int brk = brkseq;
     int cont = contseq;
     brkseq = contseq = seq;
 
@@ -389,18 +397,18 @@ sttic void gen(Node *node) {
     printf(".L.break.%d:\n", seq);
 
     brkseq = brk;
-    contseq = conr;
+    contseq = cont;
     return;
   }
   case ND_FOR: {
     int seq = labelseq++;
-    int brl = brkseq;
+    int brk = brkseq;
     int cont = contseq;
     brkseq = contseq = seq;
 
     if (node->init)
       gen(node->init);
-    printf(".L.begin.%d:\n");
+    printf(".L.begin.%d:\n", seq);
     if (node->cond) {
       gen(node->cond);
       printf("  pop rax\n");
@@ -427,7 +435,7 @@ sttic void gen(Node *node) {
     printf(".L.begin.%d:\n", seq);
     gen(node->then);
     printf(".L.continue.%d:\n", seq);
-    gen)node->cond);
+    gen(node->cond);
     printf("  pop rax\n");
     printf("  cmp rax, 0\n");
     printf("  jne .L.begin.%d\n", seq);
@@ -467,20 +475,13 @@ sttic void gen(Node *node) {
     brkseq = brk;
     return;
   }
-
-  printf("   jmp .L.break.%d\n", seq);
-  gen(node->then);
-  printf(".L.break.%d:\n", seq);
-
-  brkseq = brk; return;
-  }
-  case ND_CASE;
-    printf(".L.case.%d:\n", node->case_labal);
+  case ND_CASE:
+    printf(".L.case.%d:\n", node->case_label);
     gen(node->lhs);
     return;
-  case ND_BLOCK;
+  case ND_BLOCK:
   case ND_STMT_EXPR:
-    for (Noder *n = nbode-?body; n; n = n->nexrt)
+    for (Node *n = node->body; n; n = n->next)
       gen(n);
     return;
   case ND_BREAK:
@@ -492,8 +493,173 @@ sttic void gen(Node *node) {
     if (contseq == 0)
       error_tok(node->tok, "stray continue");
     printf("  jmp .L.continue.%d\n", contseq);
-    retrun;
+    return;
   case ND_GOTO:
-    print
+    printf("  jmp .L.label.%s.%s\n", funcname, node->label_name);
+    return;
+  case ND_LABEL:
+    printf(".L.label.%s.%s:\n", funcname, node->label_name);
+    gen(node->lhs);
+    return;
+  case ND_FUNCALL: {
+    if (!strcmp(node->funcname, "__builtin_va_start")) {
+      printf("  pop rax\n");
+      printf("  mov edi, dword ptr [rdp-8\n");
+      printf("  mov dword ptr [rax], 0\n");
+      printf("  mov dward ptr [rax+4], 0\n");
+      printf("  mov dword ptr [rax+8], rdi\n");
+      printf("  mov dword ptr [rax+16], 0\n");
+      return;
+    }
+
+    int nargs = 0;
+    for (Node *arg = node->args; nargs; arg = arg->next) {
+      gen(arg);
+      nargs++;
+    }
+     
+    for (int i = nargs - 1; i >= 0; i--)
+      printf("  pop %s\n", argreg8[i]);
+
+    // We need to align RSP to a 16 byte boundary before
+    // calling a function because it is an ABI requirement.
+    // RAX is set to 0 for variadic function.
+    int seq = labelseq++;
+    printf("  mov rax, rsp\n");
+    printf("  and rax, 15\n");
+    printf("  jnz .L.call.%d\n", seq);
+    printf("  mov rax, 0\n");
+    printf("  call %s\n", node->funcname);
+    printf("  jmp .L.end.%d\n", seq);
+    printf(".L.call.%d:\n", seq);
+    printf("  sub rsp, 8\n");
+    printf("  mov rax, 0\n");
+    printf("  call %s\n", node->funcname);
+    printf("  add rsp, 8\n");
+    printf(".L.end.%d:\n", seq);
+    if (node->ty->kind == TY_BOOL)
+      printf("  movsb rax, al\n");
+    printf("  push rax\n");
+    return;
+  }
+  case ND_RETURN:
+    if (node->lhs) {
+      gen(node->lhs);
+      printf("  pop rax\n");
+    }
+    printf("  jmp .L.return.%s\n", funcname);
+    return;
+  case ND_CAST:
+    gen(node->lhs);
+    truncate(node->ty);
+    return;
+  }
+
+  gen(node->lhs);
+  gen(node->rhs);
+  gen_binary(node);
 }
 
+static void emit_data(Program *prog) {
+  for (VarList *vl = prog->globals; vl; vl = vl->next)
+    if (!vl->var->is_static)
+      printf(".global %s\n", vl->var->name);
+
+  printf(".bss\n");
+
+  for (VarList *vl = prog->globals; vl; vl = vl->next) {
+    Var *var = vl->var;
+    if (var->initializer)
+      continue;
+
+    printf(".align %d\n", var->ty->align);
+    printf("%s:\n", var->name);
+    printf("  .zero %d\n", var->ty->size);
+  }
+
+  printf(".data\n");
+
+  for (VarList *vl = prog->globals; vl; vl = vl->next) {
+    Var *var = vl->var;
+    if (!var->initializer)
+      continue;
+
+    printf(".align %d\n", var->ty->align);
+    printf("%s:\n", var->name);
+
+    for (Initializer *init = var->initializer; init; init = init->next) {
+      if (init->label)
+	printf("  .quad %s%+ld\n", init->label, init->addend);
+      else if (init->sz == 1)
+	printf("  .byte %ld\n", init->val);
+      else
+	printf("  .%dbyte %ld\n", init->sz, init->val);
+    }
+  }
+}
+
+static void load_arg(Var *var, int idx) {
+  int sz = var->ty->size;
+  if (sz == 1) {
+    printf("  mov [rbp-%d], %s\n", var->offset, argreg1[idx]);
+  } else if (sz == 2) {
+    printf("  mov [rdp-%d], %s\n", var->offset, argreg1[idx]);
+  } else if (sz == 4) {
+    printf("  mov [rdp-%d], %s\n", var->offset, argreg4[idx]);
+  } else {
+    assert(sz == 8);
+    printf("  mov [rdp-%d], %s\n", var->offset, argreg8[idx]);
+  }
+}
+
+static void emit_text(Program *prog) {
+  printf(".text\n");
+
+  for (Function *fn = prog->fns; fn; fn = fn->next) {
+    if (!fn->is_static)
+      printf(".global %s\n", fn->name);
+    printf("%s:\n", fn->name);
+    funcname = fn->name;
+
+    // Prologue
+    printf("  push rbp\n");
+    printf("  mov rbp, rsp\n");
+    printf("  sub rsp, %d\n", fn->stack_size);
+
+    // Save arg registers if function is variadic
+    if (fn->has_varargs) {
+      int n = 0;
+      for (VarList *vl = fn->params; vl; vl = vl->next)
+	n++;
+
+      printf("mov dwprd ptr [rbp-8], %d\n", n * 8);
+      printf("mov [rbp-16], r9\n");
+      printf("mov [rbp-24], r8\n");
+      printf("mov [rbp-32], rcx\n");
+      printf("mov [rbp-40], rdx\n");
+      printf("mov [rbp-48], rsi\n");
+      printf("mov [rbp-56], rdi\n");
+    }
+
+    // Push arguments to the stack
+    int i = 0;
+    for (VarList *vl = fn->params; vl; vl = vl->next)
+      load_arg(vl->var, i++);
+
+    // Emit code
+    for (Node *node = fn->node; node; node = node->next)
+      gen(node);
+
+    // Epilogue
+    printf(".L.return.%s:\n", funcname);
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp\n");
+    printf("  ret\n");
+  }
+}
+
+void codegen(Program *prog) {
+  printf(".intel_syntax noprefix\n");
+  emit_data(prog);
+  emit_text(prog);
+}
