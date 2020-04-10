@@ -148,7 +148,6 @@ static Var *new_gvar(char *name, Type *ty, bool is_static, bool emit) {
     vl->next = globals;
     globals = vl;
   }
-
   return var;
 }
 
