@@ -254,7 +254,6 @@ Program *program(void) {
   return prog;
 }
 
-
 // basetype = builtin-type | struct-decl | typedef-name | enum-specifier
 //
 // builtin-type = "void" | "_Bool" | "char" | "short" | "int"
@@ -365,6 +364,7 @@ static Type *basetype(StorageClass *sclass) {
       break;
     case LONG:
     case LONG + INT:
+    case LONG + LONG:
     case LONG + LONG + INT:
     case SIGNED + LONG:
     case SIGNED + LONG + INT:
@@ -402,7 +402,7 @@ static Type *abstract_declarator(Type *ty) {
   while (consume("*"))
     ty = pointer_to(ty);
 
-  if (consume("()")) {
+  if (consume("(")) {
     Type *placeholder = calloc(1, sizeof(Type));
     Type *new_ty = abstract_declarator(placeholder);
     expect(")");
@@ -524,8 +524,6 @@ static Type *struct_decl(void) {
 
   ty->is_incomplete = false;
   return ty;
-
-
 }
 
 // Some types of list can end with an optional "," followed by "}"
@@ -562,7 +560,7 @@ static Type *enum_specifier(void) {
   
   // read an enum tag.
   Token *tag = consume_ident();
-  if (tag&& !peek("{}")) {
+  if (tag&& !peek("{")) {
     TagScope *sc = find_tag(tag);
     if (!sc)
       error_tok(tag, "unknown enum type");
@@ -809,7 +807,6 @@ static Initializer *gvar_initializer2(Initializer *cur, Type *ty) {
       } while (i < limit && !peek_end() && consume(","));
     }
   
-
     if (open && !consume_end())
       skip_excess_elements();
 
@@ -902,6 +899,7 @@ static void global_var(void) {
     error_tok(tok, "incomplete type");
   expect(";");
 }
+
 typedef struct Designator Designator;
 struct Designator {
   Designator *next;
@@ -1183,7 +1181,7 @@ static Node *stmt2(void) {
   }
 
   if (tok = consume("switch")) {
-    Node *node = new_node(ND_IF, tok);
+    Node *node = new_node(ND_SWITCH, tok);
     expect("(");
     node->cond = expr();
     expect(")");
@@ -1339,7 +1337,7 @@ static long eval(Node *node) {
 // is a pointer to a global variable and n is a postiive/negative
 // number. The latter form is accepted only as an initialization
 // expression for a global variable.
-static long ecval2(Node *node, Var **var) {
+static long eval2(Node *node, Var **var) {
   switch (node->kind) {
     case ND_ADD:
       return eval(node->lhs) + eval(node->rhs);
@@ -1384,6 +1382,8 @@ static long ecval2(Node *node, Var **var) {
     case ND_LOGAND:
       return eval(node->lhs) && eval(node->rhs);
     case ND_LOGOR:
+      return eval(node->lhs) && eval(node->rhs);
+    case ND_NUM:
       return node->val;
     case ND_ADDR:
       if (!var || *var || node->lhs->kind != ND_VAR || node->lhs->var->is_local)
@@ -1497,7 +1497,7 @@ static Node *bitor(void) {
 }
 
 // bitxor = bitand ("^" bitand)*
-static Node *bitcor(void) {
+static Node *bitxor(void) {
   Node *node = bitand();
   Token *tok;
   while (tok = consume("^"))
